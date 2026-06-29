@@ -1,0 +1,58 @@
+name: Tailscale RDP Workflow
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: # Is se aap manually bhi runs start kar sakte hain
+
+jobs:
+  setup-rdp:
+    runs-on: ubuntu-latest
+    # RDP session ko active rakhne k liye timeout barha diya hai (6 hours max)
+    timeout-minutes: 360 
+
+    steps:
+    # 1. Repository code checkout karna
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # 2. Tailscale network se connect hona
+    - name: Connect to Tailscale
+      uses: tailscale/github-action@v2
+      with:
+        authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+
+    # 3. Ubuntu par Desktop Environment (XFCE) aur RDP (Xrdp) install karna
+    - name: Install Desktop Environment and RDP Server
+      run: |
+        sudo apt-get update
+        echo "Installing XFCE Desktop and Xrdp..."
+        sudo apt-get install -y xfce4 xfce4-goodies xrdp
+        
+        # Xrdp ko XFCE use karne k liye configure karna
+        echo "xfce4-session" > ~/.xsession
+        sudo systemctl restart xrdp
+
+    # 4. RDP User account create karna aur password set karna
+    - name: Create RDP User and Set Password
+      run: |
+        # User 'shahdil' create karna (Aap password badal bhi sakte hain)
+        sudo useradd -m -s /bin/bash shahdil
+        echo "shahdil:ShahdilPass123" | sudo chpasswd
+        sudo usermod -aG sudo shahdil
+        
+        # GitHub runner ki current Tailscale IP print karna
+        echo "=================================================="
+        echo "RDP SERVER IS READY!"
+        echo "Your Tailscale IP is:"
+        tailscale ip -4
+        echo "Username: shahdil"
+        echo "Password: ShahdilPass123"
+        echo "=================================================="
+
+    # 5. RDP Session ko live rakhna taake server band na ho
+    - name: Keep RDP Server Alive
+      run: |
+        echo "RDP session is running. Press 'Cancel workflow' in GitHub to stop."
+        # Yeh loop system ko online rakhega jab tak aap khud stop nahi karte
+        sleep 21600
