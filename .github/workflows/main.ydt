@@ -1,0 +1,47 @@
+name: Horizon Edge Desktop
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  setup-rdp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360 
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Connect to Tailscale
+      uses: tailscale/github-action@v2
+      with:
+        authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+
+    - name: Install Desktop Environment and RDP Server
+      run: |
+        sudo apt-get update
+        echo "Installing XFCE Desktop and Xrdp..."
+        sudo apt-get install -y xfce4 xfce4-goodies xrdp
+        echo "xfce4-session" > ~/.xsession
+        sudo systemctl restart xrdp
+
+    - name: Create RDP User and Set Password
+      run: |
+        sudo useradd -m -s /bin/bash shahdil
+        echo "shahdil:ShahdilPass123" | sudo chpasswd
+        sudo usermod -aG sudo shahdil
+        
+        echo "=================================================="
+        echo "RDP SERVER IS READY!"
+        echo "Your Tailscale IP is:"
+        tailscale ip -4
+        echo "Username: shahdil"
+        echo "Password: ShahdilPass123"
+        echo "=================================================="
+
+    - name: Keep RDP Server Alive
+      run: |
+        echo "RDP session is running. Press 'Cancel workflow' in GitHub to stop."
+        sleep 21600
