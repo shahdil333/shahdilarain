@@ -1,0 +1,30 @@
+name: CI Workflow
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Checks out your repository code so the workflow can access it
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Step 2: Sets up a Node.js environment
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20' # You can change this to your required Node version
+
+    # Step 3: Installs project dependencies
+    - name: Install dependencies
+      run: npm install
+
+    # Step 4: Runs tests (if configured in your package.json)
+    - name: Run tests
+      run: npm test --if-present
